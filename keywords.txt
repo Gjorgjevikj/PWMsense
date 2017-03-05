@@ -1,0 +1,37 @@
+#######################################
+# Syntax Coloring Map For PWMsense
+#######################################
+
+#######################################
+# DataTypes (KEYWORD1)
+#######################################
+
+PWMsense	KEYWORD1
+Pulse	KEYWORD1
+PWMinfo	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+## PWMsense
+PWMinfo	KEYWORD2
+begin	KEYWORD2
+end	KEYWORD2
+TimeCounting	KEYWORD2
+Pulses	KEYWORD2
+Duty	KEYWORD2
+PRF	KEYWORD2
+Reset	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+PWMmonitor	KEYWORD2
+
+family_code	LITERAL1
