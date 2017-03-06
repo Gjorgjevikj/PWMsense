@@ -18,13 +18,14 @@ Library for simple PWM signal measuring
 #define ICACHE_RAM_ATTR
 #endif
 
-#define DEBUG_ACCESS
+//#define DEBUG_ACCESS
 // the value to be returned from the frequency sense functions when the frequency can not be determined
 #define UNDETERMINED_FREQ 0.0
 
-#define PWMmonitor(obj,pin) typedef PWMinfo<pin> obj;
+#define PWMmonitor(obj,pin) typedef PWMsense<pin> obj;
 
 // The data filled in intterupt handler packed in one single structure
+
 struct Pulse
 {
   unsigned long fallTime; // time of last pulse fall event
@@ -33,7 +34,9 @@ struct Pulse
   unsigned long firstPulseTime; // record of time when counting begins (can be on either ris or fall event)
   unsigned long pulseCounter:31; // count of fall evnets
   unsigned long firstPulseIsRising:1; // true - start on rise, false start on fail
-/*
+  };
+
+  /*
   float getDuty() volatile // returns the duty cycle od PWM signal in %, 0 if can not determine
   {
     unsigned long ds = dutyCycleSum;
@@ -67,11 +70,11 @@ struct Pulse
     return period ? pc * 1000000.0 / period : UNDETERMINED_FREQ;
   }
 */
-};
+
 
 // The interrupt handler functions per pin and the class handling the sensing (reding the recorded counters by the interrupt handlers and calculating the duty/frequency) are templates 
 template <uint8_t PIN> 
-class PWMinfo;
+class PWMsense;
 
 //#pragma GCC push_options
 //#pragma GCC optimize ("-O4")
@@ -86,35 +89,47 @@ void __attribute__ ((optimize("-O4"))) ICACHE_RAM_ATTR PWM_ISR_Change(void)
 #endif
   unsigned long t = micros();
   
-  if(!PWMinfo<PIN>::pulses.firstPulseTime)
+  if(!PWMsense<PIN>::pulses.firstPulseTime)
   {
-    PWMinfo<PIN>::pulses.firstPulseTime = PWMinfo<PIN>::pulses.riseTime = t;
-    PWMinfo<PIN>::pulses.firstPulseIsRising = PinState;
+    PWMsense<PIN>::pulses.firstPulseTime = PWMsense<PIN>::pulses.riseTime = t;
+    PWMsense<PIN>::pulses.firstPulseIsRising = PinState;
   } 
 
   if(PinState) // rise
   {
-    PWMinfo<PIN>::pulses.riseTime = t;
+    PWMsense<PIN>::pulses.riseTime = t;
   }
   else //fall
   {
-    PWMinfo<PIN>::pulses.fallTime = t;
-    PWMinfo<PIN>::pulses.pulseCounter++;
-    PWMinfo<PIN>::pulses.dutyCycleSum += (t - PWMinfo<PIN>::pulses.riseTime);
+    PWMsense<PIN>::pulses.fallTime = t;
+    PWMsense<PIN>::pulses.pulseCounter++;
+    PWMsense<PIN>::pulses.dutyCycleSum += (t - PWMsense<PIN>::pulses.riseTime);
   }
 }
 //#pragma GCC pop_options
 
-template <uint8_t PIN> // templetized by pin, so there will be a separate class / object for every monitored pin
-class PWMinfo
+template <uint8_t PIN> // templetized by pin, so there will be a separate class / object / ISR for every monitored pin
+class PWMsense
 {
   private:
-    PWMinfo() {} // no need for constructor - everything is static, since every class will have a single instance 
+    PWMsense() {} // no need for constructor - everything is static, since every class will have a single instance 
+/*	struct Pulse
+	{
+		unsigned long fallTime; // time of last pulse fall event
+		unsigned long riseTime; // time of last pulse rise event
+		unsigned long dutyCycleSum;   // sum of time while signal was high
+		unsigned long firstPulseTime; // record of time when counting begins (can be on either ris or fall event)
+		unsigned long pulseCounter : 31; // count of fall evnets
+		unsigned long firstPulseIsRising : 1; // true - start on rise, false start on fail
+	};
+*/
+	volatile static struct ICACHE_RAM_ATTR Pulse pulses;
+
   public:
     static void begin(void) 
     { 
       pinMode(PIN, INPUT_PULLUP); 
-      Reset();
+      reset();
 #if defined(ARDUINO_ARCH_AVR)
       enableInterrupt(PIN, PWM_ISR_Change<PIN>, CHANGE);
 #elif defined(ESP8266)      
@@ -133,19 +148,19 @@ class PWMinfo
 
     // returns the time past (in microseconds) since the counting started == since the first pulse (rising or falling edge) was noticed
     // returns 0 if called befor the first pulse has even appeared
-    static unsigned long int TimeCounting(void)
+    static unsigned long int timeCounting(void)
     {
       return (pulses.firstPulseTime) ? (micros() - pulses.firstPulseTime) : 0;
     }
 
     // returns the number of noticed falling edges
     // returns 0 if called befor the first pulse has even appeared
-    static unsigned long int Pulses(void)
+    static unsigned long int pulseCount(void)
     {
       return pulses.pulseCounter;
     }
 
-	static float Duty(bool rst = false) // returns the duty cycle of PWM signal in %
+	static float dutyCycle(bool rst = false) // returns the duty cycle of PWM signal in %
     {
 //      float Duty(const volatile pulse &);
       float dutyCalc(Pulse);
@@ -155,11 +170,11 @@ class PWMinfo
       float r=dutyCalc(*(const_cast<Pulse *>(&pulses))); // external function to calculate the duty to avoid bloating the all static class that will be generated for each obseved pin
 //      float r=pulses.getDuty();
       if(rst)
-        Reset();
+        reset();
       return r;
     }
 
-    static float PRF(void)  // returns the Pulse Repetition Frequency (PRF) in Hz, returns UNDETERMINED_FREQ if can not determine
+    static float prf(void)  // returns the Pulse Repetition Frequency (PRF) in Hz, returns UNDETERMINED_FREQ if can not determine
     {
       float prfCalc(Pulse);
 //      pulse safe_copy = *(const_cast<pulse *>(&pulses));
@@ -167,7 +182,7 @@ class PWMinfo
 //      return pulses.getPRF();
     }
 	
-    static void Reset() // resets the counters
+    static void reset() // resets the counters
     {
 //		void reset(volatile Pulse &);
 //		reset(pulses);
@@ -184,10 +199,11 @@ class PWMinfo
   private:
 #endif
 
-  volatile static struct ICACHE_RAM_ATTR Pulse pulses;
+//  volatile static struct ICACHE_RAM_ATTR Pulse pulses;
 };
 
-template <uint8_t PIN> volatile Pulse PWMinfo<PIN>::pulses = {0UL, 0UL, 0UL, 0UL, 0, 0};
+template <uint8_t PIN> volatile Pulse PWMsense<PIN>::pulses = {0UL, 0UL, 0UL, 0UL, 0, 0};
+// template <uint8_t PIN> volatile PWMsense<PIN>::struct Pulse PWMsense<PIN>::pulses = { 0UL, 0UL, 0UL, 0UL, 0UL, 0UL };
 
 // class end
 ///////////////////////////////////////////////////////////////////
@@ -227,6 +243,7 @@ float prfCalc(Pulse pulses)  // returns the frequency in Hz, UNDETERMINED_FREQ i
   return period ? pc * 1000000.0 / period : UNDETERMINED_FREQ;
 }
 
+/*
 void reset(volatile Pulse &pulses) // resets the counters
 {
 	//      noInterrupts();
@@ -235,5 +252,5 @@ void reset(volatile Pulse &pulses) // resets the counters
 	pulses.firstPulseTime = 0L;
 	//      interrupts();
 }
-
+*/
 #endif
