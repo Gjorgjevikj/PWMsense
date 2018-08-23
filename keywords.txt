@@ -7,30 +7,30 @@
 #######################################
 
 PWMsense	KEYWORD1
-PWMinfo		KEYWORD1
-Pulse		KEYWORD1
-Cycle		KEYWORD1
+PWMinfo	KEYWORD1
+Pulse	KEYWORD1
+Cycle	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
 ## PWMsense
-begin			KEYWORD2
-end				KEYWORD2
+begin	KEYWORD2
+end	KEYWORD2
 timeCounting	KEYWORD2
-pulseCount		KEYWORD2
-dutyCycle		KEYWORD2
-prf				KEYWORD2
-reset			KEYWORD2
+pulseCount	KEYWORD2
+dutyCycle	KEYWORD2
+prf	KEYWORD2
+reset	KEYWORD2
 
 ## PWMinfo
-begin			KEYWORD2
-end				KEYWORD2
-valid			KEYWORD2
-dutyCycle		KEYWORD2
-prf				KEYWORD2
-reset			KEYWORD2
+begin	KEYWORD2
+end	KEYWORD2
+valid	KEYWORD2
+dutyCycle	KEYWORD2
+prf	KEYWORD2
+reset	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
