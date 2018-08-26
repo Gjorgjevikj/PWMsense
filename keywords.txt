@@ -32,6 +32,12 @@ dutyCycle	KEYWORD2
 prf	KEYWORD2
 reset	KEYWORD2
 
+## Global template functions
+FreqEstimate	KEYWORD2
+DutyEstimate	KEYWORD2
+OnePulseFreqEstimate	KEYWORD2
+OnePulseDutyEstimate	KEYWORD2
+
 #######################################
 # Instances (KEYWORD2)
 #######################################
@@ -40,6 +46,4 @@ reset	KEYWORD2
 # Constants (LITERAL1)
 #######################################
 
-PWMmonitor	KEYWORD2
-
-family_code	LITERAL1
+UNDETERMINED_FREQ	LITERAL1
