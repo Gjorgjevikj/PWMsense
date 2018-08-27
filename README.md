@@ -29,11 +29,11 @@ PWMinfo object (templetized by pin) `PWMinfo<pin> obj` installs ISR that records
 PWMsense object (templetized by pin) `PWMsense<pin> obj` installs ISR that continually records the signal averaging the calculated duty and frequency (during multiple cycles) of the signal. 
   
   ```C
-  obj::begin(); - installs the ISR and starts monitoring the signal
-  obj::end(); - uninstalls the ISR (stops monitoring)
-  obj::reset(); - resets measures (starts monitoring from scratch)
-  long int obj::pulseCount(); - returns the number of times the signal has changed (either raised or fallen) since the begin or reset has been called 
-  float obj::dutyCycle(); - returns the duty of the signal in % (0-100) - averaged over all cycles since reset
+  obj::begin(); // installs the ISR and starts monitoring the signal
+  obj::end(); // uninstalls the ISR (stops monitoring)
+  obj::reset(); // resets measures (starts monitoring from scratch)
+  long int obj::pulseCount(); // returns the number of times the signal has changed (either raised or fallen) since the begin or reset has been called 
+  float obj::dutyCycle(); // returns the duty of the signal in % (0-100) - averaged over all cycles since reset
   float obj::prf(); // returns the frequency of the signal in Hz - averaged over all cycles since reset
   ```
   
