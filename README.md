@@ -1,5 +1,5 @@
 # PWMsense
-Arduino PWM sensing library
+Arduino PWM sensing library - determines the frequency and the duty of signals at any pin
 
 Simple interrupt driven library for measuring parameters (duty cycle & frequency) of a PWM signal on any Arduino pin 
 Uses EnableInterrupt library from https://github.com/GreyGnome/EnableInterrupt.
