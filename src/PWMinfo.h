@@ -1,18 +1,22 @@
 /*
 Library for simple PWM signal measuring v 0.92
 
-Distributed under: GNU General Public License v3.0
-
 Estimates the frequency and the duty of a PWM signal
 based on timing of the rising and falling edges of the signal
 using interrupts using only the last full cycle
+
+This library is distributed in the hope that it will be useful, but
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE either express or implied.
+Released into the public domain.
+Distributed under: GNU General Public License v3.0
 
 (c) Dejan Gjorgjevikj, 2017
 revised: 23.08.2018
 revised: 10.09.2018 - major revision
  - changed to use only last 3 transitions (not 4) in monitored signal
  - changed names of functions
- */
+*/
 
 #ifndef PWMINFO_H
 #define PWMINFO_H
