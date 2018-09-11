@@ -15,6 +15,7 @@ Estimates the frequency and the duty of a PWM signal
 based on timing the rising and falling edges of the signal using an interrupt
 and only one full cycle
 */
+
 #include <PWMinfo.h>
 
 // seting up some board specifics 
@@ -82,7 +83,7 @@ void setup()
   analogWrite(OUT_PWM_PIN1, 35 pct);
   delay(100);
 
-  Serial.println("One-time direct measurement ...");
+  Serial.println(F("One-time direct measurement ..."));
   // define the object to measure the parameters of a PWM signal brought to pin MEASURE_PIN2
   PWMinf(pwmMonitor, MEASURE_PIN2);
   // start the mesuring 
@@ -100,67 +101,67 @@ void setup()
   }
   // Hopefully we can estimate the duty and the frequency of the signal now
   if (pwmMonitor::valid())
-	  Serial.print("OK "); // valid estimations
+	  Serial.print(F("OK ")); // valid estimations
   else
-	  Serial.print("** "); // not enought data to esimate - no changes in signal
+	  Serial.print(F("** ")); // not enought data to esimate - no changes in signal
   // but if we call frequency() or duty() some invalid values will be returned anyway ...
 
-	Serial.print("f=");
+	Serial.print(F("f="));
 	Serial.print(pwmMonitor::frequency());
-	Serial.print("Hz ");
-	Serial.print("d=");
+	Serial.print(F("Hz "));
+	Serial.print(F("d="));
 	Serial.print(pwmMonitor::duty());
-	Serial.println("% ");
+	Serial.println(F("% "));
 
 	//we can stop monitoring now
 	pwmMonitor::end();
 	// or we can keep it running so we can call frequency() or duty() anywhere without waiting
 	// to estimate the signal parameters according its last full cycle
 
-	Serial.println("One-time measurement using template functions and pin ...");
-	Serial.print("f=");
+	Serial.println(F("One-time measurement using template functions and pin ..."));
+	Serial.print(F("f="));
 	Serial.print(OnePulseFreqEstimate<MEASURE_PIN2>(100)); // wait no more than 100ms
 	// this is a blocking call - will wait for one full cycle of the signal or the timeout to pass
-	Serial.print("Hz ");
-	Serial.print("d=");
+	Serial.print(F("Hz "));
+	Serial.print(F("d="));
 	Serial.print(OnePulseDutyEstimate<MEASURE_PIN2>(150)); // wait no more than 150ms
-	Serial.println("% ");
+	Serial.println(F("% "));
 
 	delay(1000);
-	Serial.println("Start continous measurement ...");
+	Serial.println(F("Start continous measurement ..."));
 	pwmMonitor::begin(); // start monitoring MEASURE_PIN1 again
-	Serial.println("Duty set to 10%");
+	Serial.println(F("Duty set to 10%"));
 	analogWrite(OUT_PWM_PIN1, 10 pct);
 	pwmMonitor::reset(); // reset to start from scratch without calling end() nad then begin()
 	unsigned long timew = millis();
 	while (!pwmMonitor::valid() && millis() - timew < 200)
 		yield();
 
-	Serial.print("f=");
+	Serial.print(F("f="));
 	Serial.print(pwmMonitor::frequency());
-	Serial.print("Hz ");
-	Serial.print("d=");
+	Serial.print(F("Hz "));
+	Serial.print(F("d="));
 	Serial.print(pwmMonitor::duty());
-	Serial.println("% ");
+	Serial.println(F("% "));
 
-	Serial.println("Duty set to 85%");
+	Serial.println(F("Duty set to 85%"));
 	analogWrite(OUT_PWM_PIN1, 85 pct);
 	pwmMonitor::reset(); // reset to start from scratch without calling end() nad then begin()
 	while (!pwmMonitor::valid() && millis() - timew < 200)
 		yield();
 
-	Serial.print("f=");
+	Serial.print(F("f="));
 	Serial.print(pwmMonitor::frequency());
-	Serial.print("Hz ");
-	Serial.print("d=");
+	Serial.print(F("Hz "));
+	Serial.print(F("d="));
 	Serial.print(pwmMonitor::duty());
-	Serial.println("% ");
+	Serial.println(F("% "));
 
 	// stop pwmMonitor as it was local
 	pwmMonitor::end();
-	Serial.println("Entering the main loop...");
-	Serial.println("You can change the duty using the pot @ A0");
-	Serial.println("and the frequency through serial.");
+	Serial.println(F("Entering the main loop..."));
+	Serial.println(F("You can change the duty using the pot @ A0"));
+	Serial.println(F("and the frequency through serial."));
 	// pm1 is global - start it now for continous monitoring
 	pm1::begin();
 	//pm2::begin();
@@ -186,25 +187,25 @@ void loop()
 	{
 		ms = millis();
 
-		Serial.print("A0=");
+		Serial.print(F("A0="));
 		Serial.print(aval);
 		Serial.print(' ');
 		
 		// contionously...
-		Serial.print("pm1:f=");
+		Serial.print(F("pm1:f="));
 		Serial.print(pm1::frequency());
-		Serial.print("Hz ");
-		Serial.print("pm1:d=");
+		Serial.print(F("Hz "));
+		Serial.print(F("pm1:d="));
 		Serial.print(pm1::duty());
-		Serial.print("% \t");
+		Serial.print(F("% \t"));
 
 		// hit-and-run
-		Serial.print("hr:f=");
+		Serial.print(F("hr:f="));
 		Serial.print(OnePulseFreqEstimate<MEASURE_PIN2>(100));
-		Serial.print("Hz ");
-		Serial.print("hr:d=");
+		Serial.print(F("Hz "));
+		Serial.print(F("hr:d="));
 		Serial.print(OnePulseDutyEstimate<MEASURE_PIN2>(100));
-		Serial.print("% ");
+		Serial.print(F("% "));
 
 		// or both in 1 cycle
 		PWMinf(pm2, MEASURE_PIN2);
@@ -217,12 +218,12 @@ void loop()
 		pm2::end();
 		// can stop it immedatly, can use it later
 
-		Serial.print("\tf=");
+		Serial.print(F("\tf="));
 		Serial.print(pm2::frequency());
-		Serial.print("Hz ");
-		Serial.print("d=");
+		Serial.print(F("Hz "));
+		Serial.print(F("d="));
 		Serial.print(pm2::duty());
-		Serial.print("% ");
+		Serial.print(F("% "));
 
 		Serial.println(); 
 		toogleLed();
@@ -253,7 +254,7 @@ void loop()
 			interrupts();
 		}
 		if (divisor == 1)
-			Serial.println("This seems to high for me, but I'll try...");
+			Serial.println(F("This seems to high for me, but I'll try..."));
 	}
 
 #elif defined (ESP8266) 
@@ -278,11 +279,11 @@ void loop()
 		case 'A': freq2set = 24000UL; break;
 		case 'b':
 		case 'B': freq2set = 32000UL;
-			Serial.println("Ich, uh, ... this is pretty fast...");
+			Serial.println(F("Ich, uh, ... this is pretty fast..."));
 			break;
 		case 'c':
 		case 'C': freq2set = 40000UL;
-			Serial.println("This seems to high for me, but I'll try...");
+			Serial.println(F("This seems to high for me, but I'll try..."));
 			break;
 		}
 		if (ch != '0' && freq2set != 0)
@@ -291,11 +292,11 @@ void loop()
 			analogWriteFreq(freq2set);
 			analogWrite(OUT_PWM_PIN1, map(aval, 0, 1023, 0, PWMRANGE));
 			//			interrupts();
-			Serial.print("Frequency set to: ");
+			Serial.print(F("Frequency set to: "));
 			Serial.println(freq2set);
 			pm1::reset(); 
 		}
-		//Serial.print("PWM frq. changed to: ");
+		//Serial.print(F("PWM frq. changed to: "));
 		//Serial.println(ch);
 	}
 #endif

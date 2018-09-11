@@ -127,9 +127,10 @@ class PWMsense
 
 	/// <summary> Gives the time the signal is beeing monitored 
 	/// or since the last reset of monitoring </summary>
-	/// <returns> the time past (in microseconds) since the counting started 
-	/// i.e. since the first pulse (rising or falling edge) was noticed 
-    /// returns 0 if called befor the first pulse has even appeared </returns>
+	/// <returns> the time past (in microseconds) since the first transition </returns>
+	/// <remark> i.e. since the first pulse (rising or falling edge) was noticed 
+    /// returns 0 if called before the first pulse has even appeared 
+	/// will return 0 in a case of constant signal! </remark>
     static unsigned long int timeCounting(void)
     {
       return (pulses.firstPulseTime) ? (micros() - pulses.firstPulseTime) : 0;
@@ -169,8 +170,8 @@ class PWMsense
 	/// starting measuring from scratch </remark>
 	static void reset() // resets the counters
     {
-#if defined(ARDUINO_ARCH_AVR)
-		// produces slihgtly shorter code on Arduino, not accepret by ESP8266 compiler
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+		// produces slihgtly shorter code on Arduino, not accepted by ESP8266 compiler
 		pulses = { 0 };
 #else
 		pulses.dutyCycleSum = pulses.pulseCounter = pulses.firstPulseTime = 0L;

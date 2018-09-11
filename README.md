@@ -22,7 +22,9 @@ PWMinfo object (templetized by pin) `PWMinfo<pin> obj` installs ISR that records
   ```
   
   Global functions:
+
   `OnePulseFreqEstimate<pin>(timeout)` - deretmines the frequency of the signal on the given pin and returns as soon as one full cycle or at most timeout milliseconds have passed
+  
   `OnePulseDutyEstimate<pin>(timeout)` - deretmine the duty of the signal on the given pin and returns as soon as one full cycle or at most timeout milliseconds have passed
   
 ## PWMsense
@@ -39,6 +41,8 @@ PWMsense object (templetized by pin) `PWMsense<pin> obj` installs ISR that conti
   ```
   
   Global functions:
+
   `FreqEstimate<pin>(timeout, n)` - determine the frequency of the signal on the given pin and returns as soon as n full cycles or at most timeout milliseconds have passed
+  
   `DutyEstimate<pin>(timeout, n)` - determine the duty of the signal on the given pin and returns as soon as n full cycles or at most timeout milliseconds have passed
   

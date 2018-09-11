@@ -147,8 +147,8 @@ public:
 	/// <summary> Resets the object </summary>
 	static void reset() // resets the timestamps
     {
-#if defined(ARDUINO_ARCH_AVR)
-		// produces slihgtly shorter code on Arduino, not accepret by ESP8266 compiler
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+		// produces slihgtly shorter code on Arduino, not accepted by ESP8266 compiler
 		pulses= { 0UL, 0UL, 0UL, 0UL };
 #else
 		pulses.fallTime = pulses.prevFallTime = pulses.prevRiseTime = pulses.riseTime = 0UL;
