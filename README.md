@@ -21,7 +21,7 @@ PWMinfo object (templetized by pin) `PWMinfo<pin> obj` installs ISR that records
   float obj::frequency(); // returns the frequency of the signal in Hz  - estimate using the timings of the last cycle only
   ```
   
-  global functions:
+  Global functions:
   `OnePulseFreqEstimate<pin>(timeout)` - deretmines the frequency of the signal on the given pin and returns as soon as one full cycle or at most timeout milliseconds have passed
   `OnePulseDutyEstimate<pin>(timeout)` - deretmine the duty of the signal on the given pin and returns as soon as one full cycle or at most timeout milliseconds have passed
   
@@ -34,10 +34,11 @@ PWMsense object (templetized by pin) `PWMsense<pin> obj` installs ISR that conti
   obj::end(); // uninstalls the ISR (stops monitoring)
   obj::reset(); // resets measures (starts monitoring from scratch)
   long int obj::pulseCount(); // returns the number of times the signal has changed (either raised or fallen) since the begin or reset has been called 
-  float obj::dutyCycle(); // returns the duty of the signal in % (0-100) - averaged over all cycles since reset
-  float obj::prf(); // returns the frequency of the signal in Hz - averaged over all cycles since reset
+  float obj::duty(); // returns the duty of the signal in % (0-100) - averaged over all cycles since reset
+  float obj::frequency(); // returns the frequency of the signal in Hz - averaged over all cycles since reset
   ```
   
   Global functions:
-  `FreqEstimate<pin>(timeout, n)` and `DutyEstimate<pin>(timeout, n)` - determine the frequency / duty of the signal on the given pin and returns as soon as n full cycles or at most timeout milliseconds have passed
+  `FreqEstimate<pin>(timeout, n)` - determine the frequency of the signal on the given pin and returns as soon as n full cycles or at most timeout milliseconds have passed
+  `DutyEstimate<pin>(timeout, n)` - determine the duty of the signal on the given pin and returns as soon as n full cycles or at most timeout milliseconds have passed
   
