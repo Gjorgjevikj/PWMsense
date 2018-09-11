@@ -1,14 +1,23 @@
 /*
-Library for simple PWM signal measuring
+Library for simple PWM signal measuring v 0.92
 
 Distributed under: GNU General Public License v3.0
 
+Estimates the frequency and the duty of a PWM signal
+based on timing of the rising and falling edges of the signal
+using interrupts using only the last full cycle
+
 (c) Dejan Gjorgjevikj, 2017
 revised: 23.08.2018
-*/
+revised: 10.09.2018 - major revision
+ - changed to use only last 3 transitions (not 4) in monitored signal
+ - changed names of functions
+ */
 
 #ifndef PWMINFO_H
 #define PWMINFO_H
+
+#define PWMINFO_VER 0.92.0.1
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "arduino.h"
@@ -26,7 +35,6 @@ revised: 23.08.2018
 #define ICACHE_RAM_ATTR
 #endif
 
-#define DEBUG_ACCESS
 // the value to be returned from the frequency sense functions when the frequency can not be determined
 #define UNDETERMINED_FREQ 0.0
 
@@ -52,14 +60,14 @@ void __attribute__ ((optimize("-O4"))) ICACHE_RAM_ATTR ISR_Change(void)
 {
 	unsigned long t = micros(); // must stay here!!!
 #if defined(ESP8266)      
-//  bool PinState = digitalRead(PIN);
+	//bool PinState = digitalRead(PIN);
 	if (digitalRead(PIN)) // rise
 #else
-//  bool PinState = !!arduinoPinState;
+	//bool PinState = !!arduinoPinState;
 	if (arduinoPinState) // rise
 #endif
 
-//  if (PinState) // rise
+  //if (PinState) // rise
   {
 	  PWMinfo<PIN>::pulses.prevRiseTime = PWMinfo<PIN>::pulses.riseTime;
 	  PWMinfo<PIN>::pulses.riseTime = t; 
@@ -82,6 +90,7 @@ template <uint8_t PIN>
 class PWMinfo
 {
   private:
+//public:
     PWMinfo() {} // no need for constructor - everything is static, since every class will have a single instance 
 	volatile static struct ICACHE_RAM_ATTR Cycle pulses;
 
@@ -112,38 +121,34 @@ public:
 	/// <returns> true if the signal is valid for estimation </returns>
 	static bool valid(void)
 	{
-		return pulses.prevRiseTime && pulses.prevFallTime;
+		return pulses.prevRiseTime || pulses.prevFallTime;
 	}
 
 	/// <summary> Returns the duty cycle of PWM signal in % </summary>
-	/// <param name="rst"> whrethere the mesurments should be resesed after the call </param>
 	/// <returns> the duty in percents 0-100 </returns>
-	static float dutyCycle(bool rst = false) 
-    {
-      float PWMinfoDutyCalc(Cycle);
-	  // external function to calculate the duty to avoid bloating the all static class 
-	  // that will be generated for each obseved pin
-	  // pulses passed by value (avoiding volatility)
-	  float r=PWMinfoDutyCalc(*(const_cast<Cycle *>(&pulses)));
-	  if(rst)
-        reset();
-      return r;
-    }
+	static float duty()
+	{
+		float CalculatePWMDuty(Cycle *);
+		return CalculatePWMDuty(const_cast<Cycle *>(&pulses));
+	}
 
 	/// <summary> Returns the Pulse Repetition Frequency (PRF) in Hz </summary>
 	/// <returns> frequency in Hz, UNDETERMINED_FREQ if can not determine </returns>
-	static float prf(void)  
-    {
-      float PWMinfoFreqCalc(Cycle);
-	  // external function to calculate the frequency to avoid bloating the all static class 
-	  // pulses passed by value (avoiding volatility)
-	  return PWMinfoFreqCalc(*(const_cast<Cycle *>(&pulses)));
+	static float frequency()
+	{
+		float CalculatePWMFrequency(Cycle *);
+		return CalculatePWMFrequency(const_cast<Cycle *>(&pulses));
 	}
-	
+
 	/// <summary> Resets the object </summary>
-	static void reset() // resets the counters
+	static void reset() // resets the timestamps
     {
+#if defined(ARDUINO_ARCH_AVR)
+		// produces slihgtly shorter code on Arduino, not accepret by ESP8266 compiler
 		pulses= { 0UL, 0UL, 0UL, 0UL };
+#else
+		pulses.fallTime = pulses.prevFallTime = pulses.prevRiseTime = pulses.riseTime = 0UL;
+#endif
     }
 
 	/// <summary> Returns the pin being monitored </summary>
@@ -161,39 +166,42 @@ template <uint8_t PIN> volatile Cycle PWMinfo<PIN>::pulses = { 0UL, 0UL, 0UL, 0U
 // class end
 ///////////////////////////////////////////////////////////////////
 
-
 /// <summary> Calculates the duty of the signal </summary>
-/// <param name="pulses"> Cycle stucture with timings of the signal changes </param>
+/// <param name="pulsesp"> Pointer to the Cycle stucture with timings of the signal changes </param>
 /// <returns> returns the duty cycle od PWM signal in % (0-100), 0 if can not determine </returns>
-float PWMinfoDutyCalc(Cycle pulses) 
+float CalculatePWMDuty(Cycle *pulsesp)
 {
 	float r = -1.0;
-	if (pulses.prevRiseTime && pulses.prevFallTime && pulses.prevFallTime<pulses.riseTime && pulses.fallTime > pulses.prevRiseTime)
+	
+	if (pulsesp->riseTime && pulsesp->fallTime && (pulsesp->prevRiseTime || pulsesp->prevFallTime)) // at elast both are not zeroes
 	{
-		unsigned long f_pr = pulses.fallTime - pulses.prevRiseTime;
-		unsigned long r_pf = pulses.riseTime - pulses.prevFallTime;
-		unsigned long dutyCycle;
-		if (f_pr > r_pf)
-			dutyCycle = (f_pr - r_pf) >> 1;
-		else
-			dutyCycle = f_pr;
-		unsigned long pulseWidth = (f_pr+r_pf) >> 1;
-
-		if(pulseWidth)
-			r = (dutyCycle * 100.0) / pulseWidth;
+		noInterrupts();
+		Cycle pulses_c = *pulsesp;
+		interrupts();
+		if (pulses_c.fallTime > pulses_c.riseTime)
+			r = (pulses_c.fallTime - pulses_c.riseTime) * 100.0 / (pulses_c.fallTime - pulses_c.prevFallTime);
+		else // if (pulses_c.riseTime > pulses_c.fallTime)
+			r = (pulses_c.fallTime - pulses_c.prevRiseTime) * 100.0 / (pulses_c.riseTime - pulses_c.prevRiseTime);
 	}
 	return r;
 }
 
 /// <summary> Calculates the frequency of the signal </summary>
-/// <param name="pulses"> Cycle stucture with timings of the signal changes </param>
+/// <param name="pulsesp"> Pointer to the Cycle stucture with timings of the signal changes </param>
 /// <returns> returns the frequency in Hz, UNDETERMINED_FREQ if can not determine </returns>
-float PWMinfoFreqCalc(Cycle pulses)  
+float CalculatePWMFrequency(Cycle *pulsesp)
 {
-	if (pulses.prevRiseTime && pulses.prevFallTime && pulses.prevFallTime<pulses.riseTime && pulses.fallTime > pulses.prevRiseTime)
+	if (pulsesp->riseTime && pulsesp->fallTime && (pulsesp->prevRiseTime || pulsesp->prevFallTime)) // at elast both are not zeroes
 	{
-		unsigned long pulseWidth = ((pulses.riseTime - pulses.prevRiseTime) + (pulses.fallTime - pulses.prevFallTime)) >> 1;
-		if(pulseWidth)
+		noInterrupts();
+		Cycle pulses_c = *pulsesp;
+		interrupts(); 
+		unsigned long pulseWidth;
+		if (pulses_c.fallTime > pulses_c.riseTime)
+			pulseWidth = pulses_c.fallTime - pulses_c.prevFallTime;
+		else // if (pulses_c.riseTime > pulses_c.fallTime)
+			pulseWidth = pulses_c.riseTime - pulses_c.prevRiseTime;
+		if (pulseWidth)
 			return 1000000.0 / pulseWidth; // the frequency in Hz, according to the duration of the last whole pulse
 	}
 	return UNDETERMINED_FREQ;
@@ -213,9 +221,9 @@ float OnePulseFreqEstimate(unsigned long t)
 	pwmMonitor::begin();
 	unsigned long start = millis();
 	while (!pwmMonitor::valid() && millis() - start < t)
-		;
+		yield();
 	pwmMonitor::end();
-	return pwmMonitor::prf();
+	return pwmMonitor::frequency();
 }
 
 /// <summary> Estimeates the duty according to the timing of only one pulse </summary>
@@ -230,9 +238,9 @@ float OnePulseDutyEstimate(unsigned long t)
 	pwmMonitor::begin();
 	unsigned long start = millis();
 	while (!pwmMonitor::valid() && millis() - start < t)
-		;
+		yield();
 	pwmMonitor::end();
-	return pwmMonitor::dutyCycle();
+	return pwmMonitor::duty();
 }
 
 #endif

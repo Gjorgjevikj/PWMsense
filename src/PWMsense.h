@@ -3,12 +3,19 @@ Library for simple PWM signal measuring
 
 Distributed under: GNU General Public License v3.0
 
+Estimates the frequency and the duty of a PWM signal
+based on timing of the rising and falling edges of the signal 
+using interrupts during multiple cycles
+
 (c) Dejan Gjorgjevikj, 2017
 revised: 23.08.2018
+revised: 11.09.2018 - simplificatin, renaming
 */
 
 #ifndef PWMSENSE_H
 #define PWMSENSE_H
+
+#define PWMSENSE_VER 0.92.0.1
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "arduino.h"
@@ -25,8 +32,6 @@ revised: 23.08.2018
 #include <EnableInterrupt.h>
 #define ICACHE_RAM_ATTR
 #endif
-
-//#define DEBUG_ACCESS
 
 // the value to be returned from the frequency sense functions when the frequency can not be determined
 #define UNDETERMINED_FREQ 0.0
@@ -138,20 +143,18 @@ class PWMsense
 	/// <summary> Returns the duty cycle of PWM signal in % </summary>
 	/// <param name="rst"> whrethere the mesurments should be resesed after the call </param>
 	/// <returns> the duty in percents 0-100 </returns>
-	static float dutyCycle(bool rst = false) 
+	static float duty() 
     {
       float PWMsenseDutyCalc(Pulse);
       if(!pulses.pulseCounter) // if no pulses have been recorded return duty according to the current state of the pin
         return digitalRead(PIN) ? 100.0 : 0.0;
       float r=PWMsenseDutyCalc(*(const_cast<Pulse *>(&pulses))); // external function to calculate the duty to avoid bloating the all static class that will be generated for each obseved pin
-      if(rst)
-        reset();
       return r;
     }
 
 	/// <summary> Returns the Pulse Repetition Frequency (PRF) in Hz </summary>
 	/// <returns> frequency in Hz, UNDETERMINED_FREQ if can not determine </returns>
-	static float prf(void)  // returns the Pulse Repetition Frequency (PRF) in Hz, returns UNDETERMINED_FREQ if can not determine
+	static float frequency(void)  // returns the Pulse Repetition Frequency (PRF) in Hz, returns UNDETERMINED_FREQ if can not determine
     {
       float PWMsenseFreqCalc(Pulse);
       return PWMsenseFreqCalc(*(const_cast<Pulse *>(&pulses))); // external function to calculate the frequency to avoid bloating the all static class that will be generated for each obseved pin
@@ -162,9 +165,13 @@ class PWMsense
 	/// starting measuring from scratch </remark>
 	static void reset() // resets the counters
     {
-		//pulses.dutyCycleSum = pulses.pulseCounter = pulses.firstPulseTime = 0L;
+#if defined(ARDUINO_ARCH_AVR)
+		// produces slihgtly shorter code on Arduino, not accepret by ESP8266 compiler
 		pulses = { 0 };
-    }
+#else
+		pulses.dutyCycleSum = pulses.pulseCounter = pulses.firstPulseTime = 0L;
+#endif
+	}
 
 	/// <summary> Returns the pin being monitored </summary>
 	/// <returns> the pin being monitored </returns> 
@@ -238,9 +245,9 @@ float FreqEstimate(unsigned long t, unsigned int n = 1)
 	n++; // we need at least 2 falling edges for full cycle 
 	unsigned long start = millis();
 	while (pwmMonitor::pulseCount() < n && (millis() - start) < t)
-		;
+		yield();
 	pwmMonitor::end();
-	return pwmMonitor::prf();
+	return pwmMonitor::frequency();
 }
 
 /// <summary> Estimeates the duty recording n pulses </summary>
@@ -255,9 +262,9 @@ float DutyEstimate(unsigned long t, unsigned int n = 1)
 	n++; // we need at least 2 falling edges for full cycle 
 	unsigned long start = millis();
 	while (pwmMonitor::pulseCount() < n && (millis() - start) < t)
-		;
+		yield();
 	pwmMonitor::end();
-	return pwmMonitor::dutyCycle();
+	return pwmMonitor::duty();
 }
 
 #endif

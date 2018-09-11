@@ -5,6 +5,7 @@ PWM signal measures, estimating frequency and duty
 (c) Dejan Gjorgjevikj, 2017
 Revised:
 23.08.2018 - clean up ...
+09.09.2018 - renaming, clean up, simlify
 
 https://github.com/Gjorgjevikj/PWMsense.git
 */
@@ -14,64 +15,64 @@ https://github.com/Gjorgjevikj/PWMsense.git
 
 // seting up some board specifics 
 // ... PWM generation is 8 bit precise on ATmega 
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-#pragma message("__AVR_ATmega328P__ || __AVR_ATmega168__ defined!")
+#if defined(ARDUINO_ARCH_AVR)
+#pragma message("ARDUINO_ARCH_AVR defined!")
 #define PCT(x) ((x)*256/100) 
 #define pct *256/100
 
 // generating PWM to connect it for measuring 
 // on the same device for testing purposes only... if you have no other source
-#define OUT_PWM_PIN 10
-#define OUT_PWM_PIN2 11
+const static int OUT_PWM_PIN1 = 10;
+const static int OUT_PWM_PIN2 = 11;
+void setPwmFrequency(int pin, int divisor);
 
 // pins to be used for measuring PWM signals
 // we can configure ANY pin that supports Pin Change interrupt 
 // and any number of them simultaneosly (subject to maximum speed, duty, produced code size...)
-#define MEASURE_PIN1 4 // we could choose any pin
-#define MEASURE_PIN2 5 // we could choose any pin
-#define MEASURE_PIN3 6 // we could choose any pin
-#define MEASURE_PIN4 12 // we could choose any pin
+const static int MEASURE_PIN1 = 4; // we could choose any pin
+const static int MEASURE_PIN2 = 5; // we could choose any pin
+const static int MEASURE_PIN3 = 6; // we could choose any pin
+const static int MEASURE_PIN4 = 12; // we could choose any pin
+const static int ANALOG_IN_PIN = A0;
+// connect the wiper of a potentiometer to A0 an the fixed ends to Vcc and Gnd 
+// to cange the duty of the signal generated on OUT_PWM_PIN1 and the inverse duty to OUT_PWM_PIN2
 
-#define ANALOG_IN_PIN A0
+#elif defined (ESP8266) 
 
-#endif
-
-// ... PWM generation is 10 bit precise on ESP8266
-#if defined (ESP8266) 
 #pragma message("ESP8266 defined!")
-#define PCT(x) ((x)*1024/100)
-#define pct *1024/100
+#define PCT(x) ((x)*PWMRANGE/100)
+#define pct *PWMRANGE/100
+
 // generating PWM to connect it for measuring if you have no other source
-#define OUT_PWM_PIN D5
+// on the same device for testing purposes only... if you have no other source
+const static int OUT_PWM_PIN1 = D5;
+const static int OUT_PWM_PIN2 = D6;
+
 // pins to be used for measuring PWM signals
-#define MEASURE_PIN1 D1 // we could choose any pin
-#define MEASURE_PIN2 D2 // we could choose any pin
-#define MEASURE_PIN3 D3 // we could choose any pin
-#define MEASURE_PIN4 D4 // we could choose any pin
+const static int MEASURE_PIN1 = D1; // we could choose any pin
+const static int MEASURE_PIN2 = D2; // we could choose any pin
+const static int MEASURE_PIN3 = D3; // we could choose any pin
+const static int MEASURE_PIN4 = D4; // we could choose any pin
+const static int ANALOG_IN_PIN = A0;
 
-//#define ANALOG_IN_PIN A0
 #endif
-
-int dummy = 0; //just to stop vMicro generating error on Release builds
-
 
 // Macros that print out the estimate of the frequency and the duty of the running signal on monitoring pin
 #define REPLC(_pm_)  { \
-float dty = _pm_::dutyCycle(); \
-float frq = _pm_::prf(); \
+float dty = _pm_::duty(); \
+float frq = _pm_::frequency(); \
 Serial.print(dty); Serial.print("% @ "); Serial.print(frq); Serial.print("Hz"); \
 Serial.print(" | "); \
 }
 
 // also reports the time monitoring is running and averaging the measures
 #define REP(_pm_)  { \
-float dty = _pm_::dutyCycle(); \
-float frq = _pm_::prf(); \
+float dty = _pm_::duty(); \
+float frq = _pm_::frequency(); \
 Serial.print(dty); Serial.print("% @ "); Serial.print(frq); Serial.print("Hz"); \
 Serial.print(" (");Serial.print(_pm_::timeCounting()/1000000);Serial.print(")"); \
 Serial.print(" | "); \
 }
-
 
 // macro that starts monitoring PWM signal on pin _mp_
 // waits until n cycles has been recorded or t miliseconds have passed - whichever comes first
@@ -83,8 +84,8 @@ unsigned long start=millis(); \
 while(pm::pulseCount() < (n) && (millis() - start) < (t) ) \
   ; \
 pm::end(); \
-float dty = pm::dutyCycle(); \
-float frq = pm::prf(); \
+float dty = pm::duty(); \
+float frq = pm::frequency(); \
 Serial.print(dty); Serial.print("% @ "); Serial.print(frq); Serial.print("Hz"); \
 Serial.print(" ("); Serial.print(pm::pulseCount()); Serial.print(","); Serial.print((millis() - start)); Serial.print(") "); \
 }
@@ -96,63 +97,19 @@ unsigned long start=millis(); \
 while(!pm::valid() && millis()-start < (t)) \
   ; \
 pm::end(); \
-float dty = pm::dutyCycle(); \
-float frq = pm::prf(); \
+float dty = pm::duty(); \
+float frq = pm::frequency(); \
 Serial.print(dty); Serial.print("% @ "); Serial.print(frq); Serial.print("Hz"); \
 Serial.print(" ("); Serial.print((millis() - start)); Serial.print(") "); \
-}
-
-#define MPWMDBG(_mp) { \
-Serial.println(); \
-Serial.print(_mp::pulses.prevRiseTime ); Serial.print(", "); \
-Serial.print(_mp::pulses.prevFallTime); Serial.print(", "); \
-Serial.print(_mp::pulses.riseTime); Serial.print(", "); \
-Serial.print(_mp::pulses.fallTime); Serial.println(); \
 }
 
 // declare the object that will be bounded to pin to monitor the PWM signal
 // since the objcts are generated by template and have only static functions 
 // there is no constructor call, but rather a user defined type definition
 typedef PWMsense<MEASURE_PIN1> pm1; // or use the macro PWMmonitor(pm1,MEASURE_PIN1);
-//PWMinf(pm1, MEASURE_PIN1);
 PWMmonitor(pm2,MEASURE_PIN2); // equivalent to typedef PWMsense<MEASURE_PIN2> pm2; 
-//PWMmonitor(pm3,MEASURE_PIN3);
-//PWMmonitor(pm4,MEASURE_PIN4);
-PWMinf(pm3, MEASURE_PIN3);
+typedef PWMinfo<MEASURE_PIN3> pm3; // equivalent to PWMinf(pm31, MEASURE_PIN3);
 PWMinf(pm4, MEASURE_PIN4);
-
-void setPwmFrequency(int pin, int divisor) {
-	byte mode;
-	if (pin == 5 || pin == 6 || pin == 9 || pin == 10) {
-		switch (divisor) {
-		case 1: mode = 0x01; break;
-		case 8: mode = 0x02; break;
-		case 64: mode = 0x03; break;
-		case 256: mode = 0x04; break;
-		case 1024: mode = 0x05; break;
-		default: return;
-		}
-		if (pin == 5 || pin == 6) {
-			TCCR0B = TCCR0B & 0b11111000 | mode;
-		}
-		else {
-			TCCR1B = TCCR1B & 0b11111000 | mode;
-		}
-	}
-	else if (pin == 3 || pin == 11) {
-		switch (divisor) {
-		case 1: mode = 0x01; break;
-		case 8: mode = 0x02; break;
-		case 32: mode = 0x03; break;
-		case 64: mode = 0x04; break;
-		case 128: mode = 0x05; break;
-		case 256: mode = 0x06; break;
-		case 1024: mode = 0x07; break;
-		default: return;
-		}
-		TCCR2B = TCCR2B & 0b11111000 | mode;
-	}
-}
 
 void toogleLed()
 {
@@ -163,12 +120,12 @@ void toogleLed()
 
 const unsigned long max_wait_time = 1000;
 
-void setup() {
-  // put your setup code here, to run once:
+void setup() 
+{
   Serial.begin(9600);
-  pinMode(OUT_PWM_PIN, OUTPUT);
+  pinMode(OUT_PWM_PIN1, OUTPUT);
   pinMode(OUT_PWM_PIN2, OUTPUT);
-  analogWrite(OUT_PWM_PIN, 45 pct);
+  analogWrite(OUT_PWM_PIN1, 45 pct);
   analogWrite(OUT_PWM_PIN2, 55 pct);
 
   Serial.println("One-time measurement ...");
@@ -231,7 +188,7 @@ void setup() {
 	  if (pm1::pulseCount() > 3)
 		  break;
   }
-  f = pm1::prf();
+  f = pm1::frequency();
   Serial.print("f= ");
   Serial.print(f);
   Serial.print(" ... ");
@@ -241,18 +198,18 @@ void setup() {
   while (c--)
 	  ;
 
-  // check the averahed frequency ... still counting
-  f = pm1::prf();
+  // check the averaged frequency ... still counting
+  f = pm1::frequency();
   Serial.print("f= ");
   Serial.print(f);
   Serial.print(" ... ");
 
-  analogWrite(OUT_PWM_PIN, 10 pct);
+  analogWrite(OUT_PWM_PIN1, 10 pct);
   pm2::reset();
   pm4::reset();
   delay(500);
-  d2 = pm2::dutyCycle();
-  d4 = pm4::dutyCycle();
+  d2 = pm2::duty();
+  d4 = pm4::duty();
   Serial.print(" d2= ");
   Serial.print(d2);
   Serial.print(" d4= ");
@@ -260,10 +217,10 @@ void setup() {
   Serial.print(" ... ");
 
   // change the duty
-  analogWrite(OUT_PWM_PIN, 90 pct);
+  analogWrite(OUT_PWM_PIN1, 90 pct);
   delay(500);
-  d2 = pm2::dutyCycle();
-  d4 = pm4::dutyCycle();
+  d2 = pm2::duty();
+  d4 = pm4::duty();
   Serial.print(" d2= ");
   Serial.print(d2);
   Serial.print(" d4= ");
@@ -278,10 +235,7 @@ void setup() {
 
 
   delay(100);
-  //pm1::end();
-  //pm2::end();
-  //pm3::end();
-  //pm4::end();
+  
 }
 
 //int cucl=0;
@@ -296,9 +250,15 @@ unsigned long ms = 0;
 void loop() 
 {
 	int aval = analogRead(ANALOG_IN_PIN);
-	analogWrite(OUT_PWM_PIN, aval>>2);
-	analogWrite(OUT_PWM_PIN2, 255 - (aval >> 2));
-
+#if defined(ARDUINO_ARCH_AVR)
+	// on Arduino analogRead is 10 bit (0-1023), analogWrite is 8 bit (0-255)
+	analogWrite(OUT_PWM_PIN1, map(aval, 0, 1023, 0, 255));
+	analogWrite(OUT_PWM_PIN2, map(aval, 0, 1023, 255, 0));
+#elif defined (ESP8266) 
+	// on ESP8266 analogRead is 10 bit (0-1023), analogWrite is initially 10 bit (0-PWMRANGE)
+	analogWrite(OUT_PWM_PIN1, map(aval, 0, 1023, 0, PWMRANGE));
+	analogWrite(OUT_PWM_PIN2, map(aval, 0, 1023, PWMRANGE, 0));
+#endif
 	// ... will continually report the duty cycle and the Pulse Repetition Frequency of the PWM signal
 	// averaging over time (since begin() was called), interrupts are working all the time...
 	if (millis() - ms > 1000)
@@ -309,10 +269,7 @@ void loop()
 		Serial.print(" ");
 		
 		REP(pm1);
-	//	MPWMDBG(pm1);
 		REP(pm2);
-	//	REP(pm3);
-	//	REP(pm4);
 		REPLC(pm3);
 		REPLC(pm4);
 		
@@ -326,31 +283,113 @@ void loop()
 	// they have to be resetted
 	// on the other hand averaging gives mor accurate values on unstabile signals
 	// the last two monitors that give the values considering the last cycle only will change immediately
+
+	// check if there is anything entered on serial ...
+#if defined(ARDUINO_ARCH_AVR)
 	if (Serial.available())
 	{
 		char ch = Serial.read();
+		unsigned long divisor = 0;
 		switch (ch)
 		{
-		case '0': pm1::reset(); pm2::reset(); pm3::reset(); pm4::reset(); break;
-		case '1': setPwmFrequency(OUT_PWM_PIN, 1024);  break;
-		case '2': setPwmFrequency(OUT_PWM_PIN, 256);  break;
-		case '3': setPwmFrequency(OUT_PWM_PIN, 128);  break;
-		case '4': setPwmFrequency(OUT_PWM_PIN, 64);  break;
-		case '5': setPwmFrequency(OUT_PWM_PIN, 32);  break;
-		case '6': setPwmFrequency(OUT_PWM_PIN, 8);  break;
-		case '7': setPwmFrequency(OUT_PWM_PIN, 1);  
-			Serial.println("This is too fast...: ");
-			pm1::reset(); pm1::end();
-			pm2::reset(); pm2::end();
-			pm4::reset(); pm4::end();
+		case '0': pm1::reset(); break;
+		case '1': divisor = 1024;  break;
+		case '2': divisor = 256;  break;
+		case '3': divisor = 128;  break;
+		case '4': divisor = 64;  break;
+		case '5': divisor = 32;  break;
+		case '6': divisor = 8;  break;
+		case '7': divisor = 1; break;
+		}
+		if (divisor)
+		{
+			noInterrupts();
+			pm1::reset();
+			setPwmFrequency(OUT_PWM_PIN1, divisor);
+			interrupts();
+		}
+		if (divisor == 1)
+			Serial.println("This seems to high for me, but I'll try...");
+	}
+
+#elif defined (ESP8266) 
+
+	if (Serial.available())
+	{
+		char ch = Serial.read();
+		unsigned long int freq2set = 0UL;
+		switch (ch)
+		{
+		case '0': pm1::reset(); break;
+		case '1': freq2set = 32UL; break;
+		case '2': freq2set = 125UL; break;
+		case '3': freq2set = 250UL; break;
+		case '4': freq2set = 500UL;  break;
+		case '5': freq2set = 1000UL;  break;
+		case '6': freq2set = 2000UL;  break;
+		case '7': freq2set = 4000UL;  break;
+		case '8': freq2set = 8000UL;  break;
+		case '9': freq2set = 16000UL;  break;
+		case 'a':
+		case 'A': freq2set = 24000UL; break;
+		case 'b':
+		case 'B': freq2set = 32000UL;
+			Serial.println("Ich, uh, ... this is pretty fast...");
 			break;
+		case 'c':
+		case 'C': freq2set = 40000UL;
+			Serial.println("This seems to high for me, but I'll try...");
+			break;
+		}
+		if (ch != '0' && freq2set != 0)
+		{
+			//			noInterrupts();
+			analogWriteFreq(freq2set);
+			analogWrite(OUT_PWM_PIN1, map(aval, 0, 1023, 0, PWMRANGE));
+			//			interrupts();
+			Serial.print("Frequency set to: ");
+			Serial.println(freq2set);
+			pm1::reset();
 		}
 		//Serial.print("PWM frq. changed to: ");
 		//Serial.println(ch);
 	}
-
-
-//  delay(1000);
+#endif
+	yield();
 }
 
-
+// for changing the frequency od pwm on AVR
+#if defined(ARDUINO_ARCH_AVR)
+void setPwmFrequency(int pin, int divisor) {
+	byte mode;
+	if (pin == 5 || pin == 6 || pin == 9 || pin == 10) {
+		switch (divisor) {
+		case 1: mode = 0x01; break;
+		case 8: mode = 0x02; break;
+		case 64: mode = 0x03; break;
+		case 256: mode = 0x04; break;
+		case 1024: mode = 0x05; break;
+		default: return;
+		}
+		if (pin == 5 || pin == 6) {
+			TCCR0B = TCCR0B & 0b11111000 | mode;
+		}
+		else {
+			TCCR1B = TCCR1B & 0b11111000 | mode;
+		}
+	}
+	else if (pin == 3 || pin == 11) {
+		switch (divisor) {
+		case 1: mode = 0x01; break;
+		case 8: mode = 0x02; break;
+		case 32: mode = 0x03; break;
+		case 64: mode = 0x04; break;
+		case 128: mode = 0x05; break;
+		case 256: mode = 0x06; break;
+		case 1024: mode = 0x07; break;
+		default: return;
+		}
+		TCCR2B = TCCR2B & 0b11111000 | mode;
+	}
+}
+#endif

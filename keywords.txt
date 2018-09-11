@@ -20,23 +20,23 @@ begin	KEYWORD2
 end	KEYWORD2
 timeCounting	KEYWORD2
 pulseCount	KEYWORD2
-dutyCycle	KEYWORD2
-prf	KEYWORD2
+duty	KEYWORD2
+frequency	KEYWORD2
 reset	KEYWORD2
 
 ## PWMinfo
 begin	KEYWORD2
 end	KEYWORD2
 valid	KEYWORD2
-dutyCycle	KEYWORD2
-prf	KEYWORD2
+duty	KEYWORD2
+frequency	KEYWORD2
 reset	KEYWORD2
 
 ## Global template functions
-FreqEstimate	KEYWORD2
-DutyEstimate	KEYWORD2
 OnePulseFreqEstimate	KEYWORD2
 OnePulseDutyEstimate	KEYWORD2
+FreqEstimate	KEYWORD2
+DutyEstimate	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
