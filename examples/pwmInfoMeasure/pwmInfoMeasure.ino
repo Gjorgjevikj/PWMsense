@@ -1,6 +1,6 @@
 /*
 Example program to demonstarte usage od PWMinfo library 
-https://github.com/Gjorgjevikj/PWMsense.git
+https://github.com/Gjorgjevikj/PWMsense
 for PWM signal measures, estimating frequency and duty
 
 (c) Dejan Gjorgjevikj, 2017
@@ -16,6 +16,7 @@ based on timing the rising and falling edges of the signal using an interrupt
 and only one full cycle
 */
 
+#include <PWMsense.h>
 #include <PWMinfo.h>
 
 // seting up some board specifics 

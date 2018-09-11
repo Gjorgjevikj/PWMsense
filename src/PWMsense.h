@@ -1,5 +1,5 @@
 /*
-Library for simple PWM signal measuring
+Library for simple PWM signal measuring v 1.0.1
 
 Estimates the frequency and the duty of a PWM signal
 based on timing of the rising and falling edges of the signal 
@@ -19,7 +19,7 @@ revised: 11.09.2018 - simplification, renaming
 #ifndef PWMSENSE_H
 #define PWMSENSE_H
 
-#define PWMSENSE_VER 0.92.0.1
+#define PWMSENSE_VER 1.0.1
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "arduino.h"

@@ -8,8 +8,8 @@
 
 PWMsense	KEYWORD1
 PWMinfo	KEYWORD1
-Pulse	KEYWORD1
-Cycle	KEYWORD1
+Pulse	KEYWORD3
+Cycle	KEYWORD3
 
 #######################################
 # Methods and Functions (KEYWORD2)

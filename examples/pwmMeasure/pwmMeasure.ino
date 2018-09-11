@@ -7,7 +7,7 @@ Revised:
 23.08.2018 - clean up ...
 09.09.2018 - renaming, clean up, simlify
 
-https://github.com/Gjorgjevikj/PWMsense.git
+https://github.com/Gjorgjevikj/PWMsense
 */
 
 #include <PWMsense.h>

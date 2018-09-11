@@ -1,5 +1,5 @@
 /*
-Library for simple PWM signal measuring v 0.92
+Library for simple PWM signal measuring v 1.0.1
 
 Estimates the frequency and the duty of a PWM signal
 based on timing of the rising and falling edges of the signal
@@ -11,6 +11,8 @@ FITNESS FOR A PARTICULAR PURPOSE either express or implied.
 Released into the public domain.
 Distributed under: GNU General Public License v3.0
 
+https://github.com/Gjorgjevikj/PWMsense
+
 (c) Dejan Gjorgjevikj, 2017
 revised: 23.08.2018
 revised: 10.09.2018 - major revision
@@ -21,7 +23,7 @@ revised: 10.09.2018 - major revision
 #ifndef PWMINFO_H
 #define PWMINFO_H
 
-#define PWMINFO_VER 0.92.0.1
+#define PWMINFO_VER 1.0.1
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "arduino.h"
