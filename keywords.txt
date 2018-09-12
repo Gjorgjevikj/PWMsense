@@ -7,9 +7,7 @@
 #######################################
 
 PWMsense	KEYWORD1
-PWMinfo	KEYWORD1
 Pulse	KEYWORD3
-Cycle	KEYWORD3
 
 #######################################
 # Methods and Functions (KEYWORD2)
@@ -24,17 +22,6 @@ duty	KEYWORD2
 frequency	KEYWORD2
 reset	KEYWORD2
 
-## PWMinfo
-begin	KEYWORD2
-end	KEYWORD2
-valid	KEYWORD2
-duty	KEYWORD2
-frequency	KEYWORD2
-reset	KEYWORD2
-
-## Global template functions
-OnePulseFreqEstimate	KEYWORD2
-OnePulseDutyEstimate	KEYWORD2
 FreqEstimate	KEYWORD2
 DutyEstimate	KEYWORD2
 
