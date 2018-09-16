@@ -52,7 +52,7 @@ const static int OUT_PWM_PIN2 = D6;
 const static int MEASURE_PIN1 = D1; // we could choose any pin
 const static int MEASURE_PIN2 = D2; // we could choose any pin
 const static int MEASURE_PIN3 = D3; // we could choose any pin
-const static int MEASURE_PIN4 = D4; // we could choose any pin
+const static int MEASURE_PIN4 = D7; // we could choose any pin
 const static int ANALOG_IN_PIN = A0;
 
 #endif
@@ -333,7 +333,7 @@ void loop()
 		unsigned long int freq2set = 0UL;
 		switch (ch)
 		{
-		case '0': pm1::reset(); break;
+		case '0': pm1::reset(); pm2::reset(); break;
 		case '1': freq2set = 32UL; break;
 		case '2': freq2set = 125UL; break;
 		case '3': freq2set = 250UL; break;
@@ -362,7 +362,7 @@ void loop()
 			//			interrupts();
 			Serial.print(F("Frequency set to: "));
 			Serial.println(freq2set);
-			pm1::reset();
+			pm1::reset(); pm2::reset();
 		}
 		//Serial.print(F("PWM frq. changed to: "));
 		//Serial.println(ch);

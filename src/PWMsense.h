@@ -208,7 +208,7 @@ float PWMsenseDutyCalc(Pulse pulses)
     ds -= pulses.fallTime - pulses.riseTime;
   unsigned long period = (pulses.firstPulseIsRising ? pulses.riseTime : pulses.fallTime) - pulses.firstPulseTime;
   
-  return period ? (100.0 * ds / period) : 0.0;
+  return (period && ds<=period) ? (100.0 * ds / period) : 0.0;
 }
 
 /// <summary> Calculates the frequency of the signal </summary>
